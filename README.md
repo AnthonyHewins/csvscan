@@ -10,7 +10,8 @@ go get -u github.com/AnthonyHewins/csvscan
 
 **Usage**
 
-``` sh
+
+``` shell
 usage: csvscan ARGUMENTS [OPTIONS]
 
 Usage of ARGUMENTS:
