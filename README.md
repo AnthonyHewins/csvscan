@@ -11,7 +11,7 @@ go get -u github.com/AnthonyHewins/csvscan
 **Usage**
 
 
-``` shell
+```
 usage: csvscan ARGUMENTS [OPTIONS]
 
 Usage of ARGUMENTS:
