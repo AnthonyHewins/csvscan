@@ -8,10 +8,10 @@ import (
 
 var helpText = `usage: csvscan ARGUMENTS [OPTIONS]
 
-Arguments
-  FILENAME					   The filename to read from to parse. Supply multiple
-							   to have all of them put in the same file
-  help, -h, --help, h          Display this help text.
+Usage of ARGUMENTS:
+  FILENAME              The filename to read from to parse. Supply multiple
+                        to have all of them put in the same file
+  help, -h, --help, h   Display this help text.
 `
 
 type cliArgs struct {
@@ -35,6 +35,7 @@ func main() {
 	}
 
 	args := flags(os.Args[2:])
+	args.filename = os.Args[1]
 	rows := fetchRows(args)
 
 	var fieldNames, typesList []string
@@ -58,7 +59,7 @@ func main() {
 
 func flags(flagArgs []string) *cliArgs {
 	a := cliArgs{}
-	fs := flag.NewFlagSet("global", flag.ExitOnError)
+	fs := flag.NewFlagSet("OPTIONS", flag.ExitOnError)
 
 	fs.BoolVar(&a.noHeader, "no-header", false, "Treat the first row as data (can't generate field names if this is the case)")
 	fs.StringVar(&a.packageName, "package", "", "Append a package name. Will omit if package is the empty string")
@@ -78,7 +79,6 @@ func help(exitCode int, extraMessages ...interface{}) {
 
 func usage() {
 	fmt.Printf(helpText)
-	fmt.Println("\nOptions")
 	flags([]string{"--help"})
 	flag.PrintDefaults()
 }

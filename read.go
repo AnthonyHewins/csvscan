@@ -10,6 +10,7 @@ func fetchRows(args *cliArgs) [][]string {
 	if err != nil {
 		panic(err)
 	}
+	defer f.Close()
 
 	numberOfRows := 2
 	if args.noHeader {
