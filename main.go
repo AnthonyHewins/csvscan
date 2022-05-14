@@ -34,7 +34,7 @@ func main() {
 	default:
 	}
 
-	args := flags(os.Args)
+	args := flags(os.Args[2:])
 	rows := fetchRows(args)
 
 	var fieldNames, typesList []string
@@ -57,12 +57,12 @@ func main() {
 }
 
 func flags(flagArgs []string) *cliArgs {
-	a := cliArgs{filename: os.Args[1]}
+	a := cliArgs{}
 	fs := flag.NewFlagSet("global", flag.ExitOnError)
 
 	fs.BoolVar(&a.noHeader, "no-header", false, "Treat the first row as data (can't generate field names if this is the case)")
 	fs.StringVar(&a.packageName, "package", "", "Append a package name. Will omit if package is the empty string")
-	fs.Parse(flagArgs[2:])
+	fs.Parse(flagArgs)
 
 	return &a
 }
