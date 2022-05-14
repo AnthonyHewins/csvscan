@@ -9,8 +9,7 @@ import (
 var helpText = `usage: csvscan ARGUMENTS [OPTIONS]
 
 Usage of ARGUMENTS:
-  FILENAME              The filename to read from to parse. Supply multiple
-                        to have all of them put in the same file
+  FILENAME              The filename to read from to parse
   help, -h, --help, h   Display this help text.
 `
 
