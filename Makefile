@@ -1,6 +1,8 @@
 .PHONY: $(targets) fmt test gen clean run help
 .DEFAULT: build
 
+targets := cli
+
 # command aliases
 test := ENV=test go test ./...
 
@@ -29,4 +31,4 @@ cli-help:
 
 help: ## Print help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-	@printf "\033[36m%-30s\033[0m %s\n" "(no arg)" "Build a target binary"
+	@printf "\033[36m%-30s\033[0m %s\n" "(target)" "Build a target binary: $(targets)"
