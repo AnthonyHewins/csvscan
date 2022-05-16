@@ -2,6 +2,7 @@ package csvscan
 
 import (
 	"encoding/csv"
+	"fmt"
 	"io"
 	"os"
 	"reflect"
@@ -12,6 +13,9 @@ import (
 // into the type you instantiate it with
 type Reader[T any] struct {
 	IgnoreHeader bool
+
+	// What columns to ignore, if any (0-indexed)
+	IgnoreCols []int
 }
 
 // ReadFile opens the specified file, reads & parses it in its entirety,
@@ -40,8 +44,18 @@ func (r Reader[T]) Read(rawReader io.Reader) ([]T, error) {
 	var zeroValue T
 	t := reflect.TypeOf(zeroValue)
 
-	rows := []T{}
 	i, n := 1, t.NumField()
+	columnsToIgnore := make([]bool, n)
+	for _, v := range r.IgnoreCols {
+		if v >= 0 && v < n {
+			columnsToIgnore[v] = true
+			continue
+		}
+
+		return nil, fmt.Errorf("invalid column value to ignore: %v. Only %v fields are available to assign to", v, n)
+	}
+
+	rows := []T{}
 	for {
 		rawRowAsStrings, err := reader.Read()
 		if err == io.EOF {
@@ -55,6 +69,10 @@ func (r Reader[T]) Read(rawReader io.Reader) ([]T, error) {
 		var row T
 		v := reflect.ValueOf(&row).Elem()
 		for j := 0; j < n; j++ {
+			if columnsToIgnore[j] {
+				continue
+			}
+
 			f := v.Field(j)
 			s := rawRowAsStrings[j]
 

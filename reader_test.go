@@ -27,13 +27,15 @@ type mockCSV struct {
 }
 
 func TestRead(t *testing.T) {
-	tests := []struct {
+	type test struct {
 		name        string
 		r           Reader[mockCSV]
 		arg         string
 		expected    []mockCSV
 		expectedErr error
-	}{
+	}
+
+	tests := []test{
 		{
 			"base case",
 			Reader[mockCSV]{},
@@ -76,7 +78,27 @@ func TestRead(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"ignores specified columns when passed",
+			Reader[mockCSV]{IgnoreCols: []int{1,5}},
+			"true,2,3,4,5,6,7,8,9,10,11,0.9,1.2,string",
+			[]mockCSV{
+				{true, 0, 3, 4, 5, 0, 7, 8, 9, 10, 11, 0.9, 1.2, "string"},
+			},
+			nil,
+		},
 	}
+
+	for _, v := range []int{-1, 14, 15} {
+	tests = append(tests,
+		test{
+			fmt.Sprintf("when an ignore column is outside the range (%v not in [0,13]) it fails", v),
+			Reader[mockCSV]{IgnoreCols: []int{v}},
+			"true,2,3,4,5,6,7,8,9,10,11,0.9,1.2,string",
+			nil,
+		fmt.Errorf("invalid column value to ignore: %v. Only %v fields are available to assign to", v, 14),
+		})
+}
 
 	for _, tc := range tests {
 		reader := strings.NewReader(tc.arg)
