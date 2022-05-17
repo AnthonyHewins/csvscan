@@ -14,8 +14,8 @@ import (
 type Reader[T any] struct {
 	IgnoreHeader bool
 
-	// What columns to ignore, if any (0-indexed)
-	IgnoreCols []int
+	// Force a specific column length
+	ForceColumnLength int
 }
 
 // ReadFile opens the specified file, reads & parses it in its entirety,
@@ -43,38 +43,43 @@ func (r Reader[T]) Read(rawReader io.Reader) ([]T, error) {
 
 	var zeroValue T
 	t := reflect.TypeOf(zeroValue)
+	if t.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("csvscan.Reader only is able to work with structs")
+	}
 
-	i, n := 1, t.NumField()
-	columnsToIgnore := make([]bool, n)
-	for _, v := range r.IgnoreCols {
-		if v >= 0 && v < n {
-			columnsToIgnore[v] = true
-			continue
-		}
-
-		return nil, fmt.Errorf("invalid column value to ignore: %v. Only %v fields are available to assign to", v, n)
+	fieldMap, err := generateFieldMap(t)
+	if err != nil {
+		return nil, err
 	}
 
 	rows := []T{}
+	i := 1
 	for {
 		rawRowAsStrings, err := reader.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
 			return nil, err
-		} else if m := len(rawRowAsStrings); m != n {
-			return nil, newParseErr(i, 0, rawRowAsStrings, "column number mismatch: expected %v but got %v", n, m)
 		}
 
 		var row T
 		v := reflect.ValueOf(&row).Elem()
-		for j := 0; j < n; j++ {
-			if columnsToIgnore[j] {
+
+		n := len(rawRowAsStrings)
+		if r.ForceColumnLength > 0 && n != r.ForceColumnLength {
+			return nil, newParseErr(i, 0, rawRowAsStrings, "enforced length for columns is %v but got %v", r.ForceColumnLength, n)
+		}
+
+		for j := 0; j < len(rawRowAsStrings); j++ {
+			fieldToAssign := fieldMap[j]
+			if fieldToAssign == nil {
 				continue
 			}
 
-			f := v.Field(j)
 			s := rawRowAsStrings[j]
+			f := v.Field(*fieldToAssign)
 
 			switch k := f.Kind(); k {
 			case reflect.Bool:
@@ -119,6 +124,50 @@ func (r Reader[T]) Read(rawReader io.Reader) ([]T, error) {
 	}
 
 	return rows, nil
+}
+
+// generateFieldMap examines the type's "csv" field tag which contains an
+// integer. That integer tells the Reader which column in the CSV should be
+// mapped to in the struct (zero indexed):
+//
+// 	 type Example struct {
+// 	    Column1 int `csv:"1"`
+//   }
+//
+// generateFieldMap will then generate the map
+//
+//   {1: 0}
+//
+// Which means when reading the CSV row "1,2,3,4" it will take 2 and put it
+// in Column1
+func generateFieldMap(t reflect.Type) (map[int]*int, error){
+	n := t.NumField()
+	fieldMap := make(map[int]*int, n)
+
+	for i := 0; i < n; i++ {
+		f := t.Field(i)
+		csvTag := f.Tag.Get("csv")
+		if csvTag == "" {
+			continue
+		}
+
+		columnIndex, err := strconv.ParseInt(csvTag, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid CSV tag for field %v: %v", f.Name, csvTag)
+		}
+
+		if columnIndex < 0 {
+			return nil, fmt.Errorf("invalid CSV tag for field %v: can't have a negative value for the index, got %v", f.Name, csvTag)
+		}
+		copyI := i
+		fieldMap[int(columnIndex)] = &copyI
+	}
+
+	if len(fieldMap) == 0 {
+		return nil, fmt.Errorf("no CSV tags specified, can't tell what struct fields to map which column to")
+	}
+
+	return fieldMap, nil
 }
 
 func setBool(f reflect.Value, s string) error {

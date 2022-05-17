@@ -1,0 +1,2 @@
+([]csvscan.X) <nil>
+(*errors.errorString)(invalid CSV tag for field Y: can't have a negative value for the index, got -1)

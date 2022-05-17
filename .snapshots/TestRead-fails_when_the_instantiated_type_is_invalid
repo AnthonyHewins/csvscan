@@ -1,0 +1,2 @@
+([]int) <nil>
+(*errors.errorString)(csvscan.Reader only is able to work with structs)

@@ -1,38 +1,54 @@
 package csvscan
 
 import (
-	"fmt"
-	"strconv"
+	"io"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/bradleyjkemp/cupaloy"
 )
 
 type mockCSV struct {
-	A bool
-	B uint8
-	C uint16
-	D uint32
-	E uint64
-	F uint
-	G int8
-	H int16
-	I int32
-	J int64
-	K int
-	L float32
-	M float64
-	N string
+	Skip bool
+	A bool `csv:"0"`
+	B uint8 `csv:"1"`
+	C uint16 `csv:"2"`
+	D uint32 `csv:"3"`
+	E uint64 `csv:"4"`
+	F uint `csv:"5"`
+	G int8 `csv:"6"`
+	H int16 `csv:"7"`
+	I int32 `csv:"8"`
+	J int64 `csv:"9"`
+	K int `csv:"10"`
+	L float32 `csv:"11"`
+	M float64 `csv:"12"`
+	N string `csv:"13"`
+	NeverTouched int `csv:"1000"`
 }
 
-func TestRead(t *testing.T) {
+func TestRead(mainTest *testing.T) {
+	mainTest.Run("fails when the instantiated type is invalid", func(t *testing.T) {
+		actual, err := Reader[int]{}.Read(io.Reader(nil))
+		cupaloy.SnapshotT(t,actual, err)
+	})
+
+	mainTest.Run("fails on invalid CSV tags that arent ints", func(t *testing.T) {
+		type X struct { Y int `csv:"aosdpad"` }
+		actual, err := Reader[X]{}.Read(io.Reader(nil))
+		cupaloy.SnapshotT(t,actual, err)
+	})
+
+	mainTest.Run("fails on invalid CSV tags that are negative indices", func(t *testing.T) {
+		type X struct { Y int `csv:"-1"` }
+		actual, err := Reader[X]{}.Read(io.Reader(nil))
+		cupaloy.SnapshotT(t,actual, err)
+	})
+
 	type test struct {
 		name        string
 		r           Reader[mockCSV]
 		arg         string
-		expected    []mockCSV
-		expectedErr error
 	}
 
 	tests := []test{
@@ -40,72 +56,35 @@ func TestRead(t *testing.T) {
 			"base case",
 			Reader[mockCSV]{},
 			"",
-			[]mockCSV{},
-			nil,
-		},
-		{
-			"throws error when column lengths don't match",
-			Reader[mockCSV]{},
-			"true,2",
-			nil,
-			newParseErr(1, 0, []string{"true", "2"}, "column number mismatch: expected 14 but got 2"),
 		},
 		{
 			"throws errors on invalid types",
 			Reader[mockCSV]{},
 			"po,2,3,4,5,6,7,8,9,10,11,0.9,1.2,string",
-			nil,
-			wrapParseErr(
-				&strconv.NumError{Func: "ParseBool", Num: "po", Err: strconv.ErrSyntax},
-				1,
-				0,
-				strings.Split("po,2,3,4,5,6,7,8,9,10,11,0.9,1.2,string", ","),
-			),
 		},
 		{
 			"ignores header when told to",
 			Reader[mockCSV]{IgnoreHeader: true},
+			"1,2,3,4\n1,2,3,4\n",
+		},
+		{
+			"enforces column length when specified, erroring if it doesn't satisfy",
+			Reader[mockCSV]{ForceColumnLength: 5},
 			"1,2,3,4\n",
-			[]mockCSV{},
-			nil,
 		},
 		{
 			"reads values correctly",
-			Reader[mockCSV]{},
+			Reader[mockCSV]{ForceColumnLength: 14},
 			"true,2,3,4,5,6,7,8,9,10,11,0.9,1.2,string",
-			[]mockCSV{
-				{true, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0.9, 1.2, "string"},
-			},
-			nil,
-		},
-		{
-			"ignores specified columns when passed",
-			Reader[mockCSV]{IgnoreCols: []int{1,5}},
-			"true,2,3,4,5,6,7,8,9,10,11,0.9,1.2,string",
-			[]mockCSV{
-				{true, 0, 3, 4, 5, 0, 7, 8, 9, 10, 11, 0.9, 1.2, "string"},
-			},
-			nil,
 		},
 	}
 
-	for _, v := range []int{-1, 14, 15} {
-	tests = append(tests,
-		test{
-			fmt.Sprintf("when an ignore column is outside the range (%v not in [0,13]) it fails", v),
-			Reader[mockCSV]{IgnoreCols: []int{v}},
-			"true,2,3,4,5,6,7,8,9,10,11,0.9,1.2,string",
-			nil,
-		fmt.Errorf("invalid column value to ignore: %v. Only %v fields are available to assign to", v, 14),
-		})
-}
-
 	for _, tc := range tests {
 		reader := strings.NewReader(tc.arg)
-		actual, actualErr := tc.r.Read(reader)
-		assert.Equal(t, tc.expected, actual, tc.name)
-		if !assert.Equal(t, tc.expectedErr, actualErr, tc.name) {
-			fmt.Println(actualErr)
-		}
+
+		mainTest.Run(tc.name, func(t *testing.T) {
+			actual, actualErr := tc.r.Read(reader)
+			cupaloy.SnapshotT(t, tc.name, actual, actualErr)
+		})
 	}
 }

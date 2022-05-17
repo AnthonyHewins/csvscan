@@ -1,0 +1,4 @@
+enforces column length when specified, erroring if it doesn't satisfy
+([]csvscan.mockCSV) <nil>
+(*csvscan.ParseErr)(Line 1, Column 0: enforced length for columns is 5 but got 4
+Raw line: [1 2 3 4])

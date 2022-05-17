@@ -1,0 +1,22 @@
+ignores header when told to
+([]csvscan.mockCSV) (len=1) {
+  (csvscan.mockCSV) {
+    Skip: (bool) false,
+    A: (bool) true,
+    B: (uint8) 2,
+    C: (uint16) 3,
+    D: (uint32) 4,
+    E: (uint64) 0,
+    F: (uint) 0,
+    G: (int8) 0,
+    H: (int16) 0,
+    I: (int32) 0,
+    J: (int64) 0,
+    K: (int) 0,
+    L: (float32) 0,
+    M: (float64) 0,
+    N: (string) "",
+    NeverTouched: (int) 0
+  }
+}
+(interface {}) <nil>
