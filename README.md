@@ -1,6 +1,7 @@
 # csvscan
 
-Converts CSV values into Go structs
+Converts CSV values into Go structs using generics and also allows reading from a CSV
+using those structs via field tags
 
 **Go get**
 
@@ -8,8 +9,11 @@ Converts CSV values into Go structs
 go get -u github.com/AnthonyHewins/csvscan 
 ```
 
-**Usage**
+**Library usage**
 
+See the [examples directory](github.com/AnthonyHewins/csvscan/examples)
+
+**CLI Usage**
 
 ```
 usage: csvscan ARGUMENTS [OPTIONS]
