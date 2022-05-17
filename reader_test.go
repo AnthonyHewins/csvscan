@@ -68,7 +68,7 @@ func TestRead(mainTest *testing.T) {
 			"1,2,3,4\n1,2,3,4\n",
 		},
 		{
-			"enforces column length when specified, erroring if it doesn't satisfy",
+			"enforces column length when specified, erroring if it doesnt satisfy",
 			Reader[mockCSV]{ForceColumnLength: 5},
 			"1,2,3,4\n",
 		},
